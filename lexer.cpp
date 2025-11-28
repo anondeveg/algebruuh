@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "internals.h"
-
 bool isDigitString(std::string str)
 {
     for (char x : str)
@@ -124,5 +123,5 @@ std::vector<Token> Lex(std::string equation, bool dump = false, bool verbose = f
 				std::cout << "\n[TOKENS DUMPED] dump.lex\n";
     }
 
-    std::exit(0);
+		return x;
 }

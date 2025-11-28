@@ -35,6 +35,7 @@ algebruuh [OPTIONS] <PATH_TO_FILE>
 |------|-------------|
 | `-v` | **Verbose mode** - Prints tokens as they are generated |
 | `-d` | **Dump mode** - Exports token vector to `dump.lex` in the current directory |
+| `-i` | **Interactive mode** REPL |
 
 ### Example
 
