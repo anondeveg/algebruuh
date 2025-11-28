@@ -5,17 +5,18 @@
 #include <map>
 #include <vector>
 
-using termMap = std::map<int, std::tuple<std::string, std::string, bool>>;
 
 enum TokenTypes
 {
-    ADDOP,
-    SUBOP,
-    DIVOP,
-    MULOP,
-    POWOP,
-    NUM,
-    VAR
+    ADDOP,  // 0
+    SUBOP,  // 1
+    DIVOP,  // 2
+    MULOP,  // 3
+    POWOP,  // 4
+    NUM,    // 5
+    VAR,    // 6
+    NUL,    // 7
+            //  null but i can't use null cause fricking c++ reserved it
 };
 // struct Term
 // {
@@ -26,31 +27,17 @@ enum TokenTypes
 //     bool lhs;  // whether left hand side or no, will help later in AST generation
 // };
 //
-struct Token{
-	std::string token;
-	TokenTypes type;
-
-
+struct Token
+{
+    std::string token;
+    TokenTypes type;
 };
 
 std::vector<Token> Lex(std::string equation);
 
-inline std::ostream& operator<<(std::ostream& o, const Token& token )
+inline std::ostream& operator<<(std::ostream& o, const Token& token)
 {
     return o << "\nToken:\t" << token.token << "\nType:\t" << token.type;
-}
-
-inline void printContainer(const termMap& m, std::string_view comment = "")
-{
-    std::cout << comment;
-    // Iterate using C++17 facilities
-    for (const auto& [key, value] : m)
-    {
-        const auto& [str1, str2, flag] = value;
-        std::cout << '[' << key << "] = (" << str1 << ", " << str2 << ", " << std::boolalpha << flag
-                  << "); ";
-    }
-    std::cout << '\n';
 }
 
 inline void printContainer(const std::tuple<std::string, std::string, bool>& t)

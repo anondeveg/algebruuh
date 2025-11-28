@@ -44,6 +44,6 @@ int main()
                  "multiplication\n\t^\t:power\n\n";
     // std::cout << "Equation: ";
     //  std::cin >> equation;
-    equation = "3y^2 - 8y + 3x + 100";  //"3y^2 + 8y + 3x + 100";
+    equation = "3 * y ^ 2 - 8 y + 3 x + 100";  //"3y^2 + 8y + 3x + 100";
     ConicSolver Solver(equation);
 }
