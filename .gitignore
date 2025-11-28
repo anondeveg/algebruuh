@@ -8,6 +8,9 @@ ConicCalc
 *.a
 *.so
 
+# not commite commite ready
+**/ASTGenerator.cpp
+
 # files
 dump.lex
 # oil-nvim
