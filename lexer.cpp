@@ -20,42 +20,8 @@ bool isDigitString(std::string str)
             return false;
         }
     }
-
     return true;
 }
-
-TokenTypes getTokenType(std::string x)
-{
-    if (x.size() == 1)
-    {
-        char y = x[0];
-        switch (y)
-        {
-            case '+':
-                return ADDOP;
-            case '-':
-                return SUBOP;
-            case '*':
-                return MULOP;
-            case '/':
-                return DIVOP;
-            case '^':
-                return POWOP;
-            case ' ':
-                return NUL;
-        }
-    }
-    if (isDigitString(x))
-    {
-        return NUM;
-    }
-		if(x[0] < 91 || x[0] > 96){
-			if(x[0] >= 65 && x[0] <= 122){
-				return VAR;
-		}}
-    throw "NOT IMPLEMENTED CHAR -> " + x;
-}
-
 int getTermVariableIndex(std::string strTerm, int index = 0)
 {
     while (isdigit(strTerm[index]))
@@ -156,19 +122,78 @@ std::vector<std::string> split(std::string base, char delim)
     printContainer(v);
     return v;
 }
+
+TokenTypes getType(char x)
+{
+    if (std::isdigit(x))
+    {
+        return NUM;
+    }
+    else
+    {
+        return VAR;
+    }
+}
+std::tuple<Token, std::string> _lex(std::string tokenBuilder, std::string equation,
+                                    TokenTypes last_type = NUL)
+{
+    char x = equation[0];
+    if (x == ' ')
+    {  // skip spaces
+
+        return _lex(tokenBuilder, equation.substr(1, equation.size()), last_type);
+    }
+
+    if (last_type != getType(x) && last_type != NUL)
+    {
+        return make_tuple(Token{tokenBuilder, last_type}, equation);
+    }
+    switch (x)
+    {
+        case '+':
+            return std::make_tuple(Token{(std::string() + x), ADDOP},
+                                   equation.substr(1, equation.size()));
+
+        case '-':
+            return std::make_tuple(Token{(std::string() + x), SUBOP},
+                                   equation.substr(1, equation.size()));
+        case '*':
+            return std::make_tuple(Token{(std::string() + x), MULOP},
+                                   equation.substr(1, equation.size()));
+        case '/':
+            return std::make_tuple(Token{(std::string() + x), DIVOP},
+                                   equation.substr(1, equation.size()));
+        case '^':
+            return std::make_tuple(Token{(std::string() + x), POWOP},
+                                   equation.substr(1, equation.size()));
+    }
+
+    if (std::isdigit(x) && (last_type == NUM || last_type == NUL))
+    {
+        tokenBuilder += x;
+        return _lex(tokenBuilder, equation.substr(1, equation.size()),
+                    NUM);  // remove the first charachter
+    }
+
+    return std::make_tuple(Token{(std::string() + x), VAR}, equation.substr(1, equation.size()));
+    std::string error = "ERROR\n x->" + (std::string() + x) + "\nEquation ->" + equation;
+
+    throw error;
+}
+
 std::vector<Token> Lex(std::string equation)
 {
     std::vector<Token> Tokens;
-    std::vector<std::string> splitedEquation = split(equation, ' ');
-    for (std::string x : splitedEquation)
+    std::vector<Token> x;
+    while (equation.size() != 0)
     {
-        if (getTokenType(x) != NUL)
-        {
-            Token t;
-            t.token = x;
-            t.type = getTokenType(x);
-            Tokens.emplace_back(t);
-        }
+        std::tuple<Token, std::string> y;
+
+        y = _lex("", equation);
+        x.emplace_back(std::get<0>(y));
+        equation = std::get<1>(y);
     }
-		return Tokens;
+
+		printContainer(x);
+    std::exit(0);
 }

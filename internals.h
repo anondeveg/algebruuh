@@ -40,6 +40,15 @@ inline std::ostream& operator<<(std::ostream& o, const Token& token)
     return o << "\nToken:\t" << token.token << "\nType:\t" << token.type;
 }
 
+inline void printContainer(const std::vector<std::tuple<Token, std::string>>& vec)
+{
+    std::cout << "[\n";
+    for (const auto& [token, str] : vec) {
+        std::cout << "  (" << token << ", \"" << str << "\")\n";
+    }
+    std::cout << "]\n";
+}
+
 inline void printContainer(const std::tuple<std::string, std::string, bool>& t)
 {
     const auto& [str1, str2, flag] = t;
