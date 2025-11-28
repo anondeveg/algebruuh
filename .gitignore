@@ -1,4 +1,14 @@
+# Compiled binaries
+algebruuh
 ConicCalc
-ASTGenerator.cpp
-"\'"
 
+# Build artifacts
+*.o
+*.out
+*.a
+*.so
+
+# files
+dump.lex
+# oil-nvim
+' 

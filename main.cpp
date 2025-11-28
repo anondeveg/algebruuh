@@ -1,7 +1,10 @@
 #include <strings.h>
-#include <algorithm>
-#include "internals.h"
+#include <unistd.h>
 
+#include <algorithm>
+#include <fstream>
+
+#include "internals.h"
 enum ProblemType
 {
     Parabola
@@ -11,13 +14,13 @@ class ConicSolver
    public:
     ProblemType m_Problem = Parabola;
     std::string m_equation;
-    ConicSolver(std::string equation)
+    ConicSolver(std::string equation,bool dump=false,bool verbose=false)
     {
-			m_equation = lower(equation);
+        m_equation = lower(equation);
         if (!(in(equation, "x^")) || !(in(equation, "y^")))
         {
             m_Problem = Parabola;
-						printContainer(Lex(equation));
+            printContainer(Lex(equation,dump,verbose));
         }
     }
 
@@ -35,15 +38,67 @@ class ConicSolver
         return data;
     }
 };
+std::string ReadFile(std::string filename)
+{
+    std::ifstream file(filename);
+    std::string temp{};
+    std::string code;
+    if (file.is_open())
+    {
+        while (getline(file, temp))
+        {
+            code += temp;
+        }
+        file.close();
+    }
+    else
+    {
+        std::cerr << "Unable to open file: " << filename << std::endl;
+    }
 
-int main()
+    return code;
+}
+
+void printHelp()
+{
+    std::cout << R"(Usage: ./bruuh -<OPTIONS> FILE
+
+Options:
+ -d    Dumps lexer output to output.lex
+ -h    Shows this message
+)";
+}
+int main(int argc, char* argv[])
 {
     std::string equation;
-    std::cout << "you can input the equation using these "
-                 "symbols:\n\n\t+\t:addition\n\t-\t:subtraction\n\t*\t:"
-                 "multiplication\n\t^\t:power\n\n";
-    // std::cout << "Equation: ";
-    //  std::cin >> equation;
-    equation  = "123 + 5";// "3*y^2-8y+3x+100";  //"3y^2 + 8y + 3x + 100";
-    ConicSolver Solver(equation);
-}
+
+    bool dumpLexer = false;
+		bool verbose = false;
+    std::string filename;
+
+    for (int i = 1; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+
+        if (arg == "-d")
+        {
+            dumpLexer = true;
+        }
+        else if (arg == "-h")
+        {
+            printHelp();
+        }else if(arg == "-v"){
+					verbose = true;
+				}
+
+				
+        filename = argv[argc - 1];
+        if (filename.empty())
+        {
+            std::cerr << "Error: No input file specified\n";
+            return 1;
+        }}
+        equation = ReadFile(filename);
+        ConicSolver Solver(equation,dumpLexer,verbose);
+    }
+

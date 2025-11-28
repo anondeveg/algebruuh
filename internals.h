@@ -4,7 +4,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
-
+#include <fstream>
 
 enum TokenTypes
 {
@@ -18,22 +18,17 @@ enum TokenTypes
     NUL,    // 7
             //  null but i can't use null cause fricking c++ reserved it
 };
-// struct Term
-// {
-//     double coefficient;
-//     std::string variable{};
-//     int power = 1;
-//     std::string operation;
-//     bool lhs;  // whether left hand side or no, will help later in AST generation
-// };
-//
+
 struct Token
 {
     std::string token;
     TokenTypes type;
 };
 
-std::vector<Token> Lex(std::string equation);
+
+
+
+std::vector<Token> Lex(std::string equation,bool dump,bool verbose);
 
 inline std::ostream& operator<<(std::ostream& o, const Token& token)
 {
@@ -43,7 +38,8 @@ inline std::ostream& operator<<(std::ostream& o, const Token& token)
 inline void printContainer(const std::vector<std::tuple<Token, std::string>>& vec)
 {
     std::cout << "[\n";
-    for (const auto& [token, str] : vec) {
+    for (const auto& [token, str] : vec)
+    {
         std::cout << "  (" << token << ", \"" << str << "\")\n";
     }
     std::cout << "]\n";
@@ -63,4 +59,21 @@ void printContainer(const std::vector<T>& vec)
     }
 }
 
+inline int writeToFile(std::string filename, const std::vector<Token>& tokens)
+{
+    std::ofstream file(filename);
+    if (!file.is_open())
+    {
+        std::cerr << "Unable to open file: " << filename << std::endl;
+        return 1;
+    }
+    
+    for (const auto& token : tokens)
+    {
+        file << token << "\n";
+    }
+    
+    file.close();
+    return 0;
+}
 #endif
