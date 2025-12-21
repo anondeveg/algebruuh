@@ -7,7 +7,7 @@ A lightweight interpreter for mathematical equations.
 🚧 **Early Development** - Currently implements lexical analysis ONLY. AST generation and evaluation are in progress.
 
 ## Note
-The lexer and AST are things I’m building mostly by intuition right now. Both will be rewritten later in a more standard, industry-style way.
+The lexer and parser are things I’m building mostly by intuition right now. Both will be rewritten later in a more standard, industry-style way.
 The whole purpose of the project is to have fun and learn.
 
 ## Prerequisites
@@ -62,7 +62,7 @@ algebruuh -d example.bruh
 ## Roadmap
 
 - [ ] Support multiple equations separated by newlines
-- [ ] Implement AST (Abstract Syntax Tree) generation
+- [x] Implement AST (Abstract Syntax Tree) generation (DONE USING PRATT PARSING)
 - [ ] Add tree evaluation and equation solving
 - [ ] Support for common mathematical functions (sin cos etc)
 
