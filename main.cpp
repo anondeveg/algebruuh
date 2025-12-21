@@ -1,77 +1,44 @@
-#include <strings.h>
-#include <unistd.h>
+#include "internals.h"
+#include "parser.h"
+#include "prints.h"
 
-#include <algorithm>
 #include <fstream>
 #include <string>
+#include <strings.h>
+#include <unistd.h>
+#include <vector>
 
-#include "internals.h"
-enum ProblemType
-{
-    Parabola
-};
-class ConicSolver
-{
-   public:
-    ProblemType m_Problem = Parabola;
-    std::string m_equation;
-    ConicSolver(std::string equation, bool dump = false, bool verbose = false)
-    {
-        m_equation = lower(equation);
-        if (!(in(equation, "x^")) || !(in(equation, "y^")))
-        {
-            m_Problem = Parabola;
-            Lex(equation, dump, verbose);
-        }
-    }
-
-    bool in(std::string base, std::string check)
-    {
-        bool isIn = base.find(check) != std::string::npos;  // npos is just -1
-        return isIn;
-    }
-
-    std::string lower(std::string data)
-    {
-        std::transform(data.begin(), data.end(), data.begin(),
-                       [](unsigned char c) { return std::tolower(c); });
-
-        return data;
-    }
-};
-std::string ReadFile(std::string filename)
-{
+std::string ReadFile(std::string filename) {
     std::ifstream file(filename);
-    std::string temp{};
+    std::string temp {};
     std::string code;
-    if (file.is_open())
-    {
-        while (getline(file, temp))
-        {
+    if (file.is_open()) {
+        while (getline(file, temp)) {
             code += temp;
         }
         file.close();
-    }
-    else
-    {
+    } else {
         std::cerr << "Unable to open file: " << filename << std::endl;
     }
 
     return code;
 }
 
-void interactive()
-{
-    while (true)
-    {
+void parse(std::string eq, bool dump, bool isVerbose) {
+    std::vector<Token> tokens = Lex(eq, dump, isVerbose);
+    print_ast(Parser::parse(tokens));
+}
+
+void interactive() {
+    while (true) {
         std::string equation;
         std::cout << "\n>>>";
         std::getline(std::cin >> std::ws, equation);
-        ConicSolver Solver(equation, 0, 1);  // verbose
+        parse(equation, 1, 1);
     }
 }
-void printHelp()
-{
+
+void printHelp() {
     std::cout << R"(Usage: ./bruuh -<OPTIONS> FILE
 
 Options:
@@ -79,50 +46,40 @@ Options:
  -h    Shows this message
 )";
 }
-int main(int argc, char* argv[])
-{
+
+int main(int argc, char* argv[]) {
     std::string equation;
 
     bool dumpLexer = false;
     bool verbose = false;
     std::string filename;
 
-    for (int i = 1; i < argc; ++i)
-    {
+    for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         bool intera = false;
-        if (arg == "-d")
-        {
+        if (arg == "-d") {
             dumpLexer = true;
-        }
-        else if (arg == "-h")
-        {
+        } else if (arg == "-h") {
             printHelp();
-        }
-        else if (arg == "-v")
-        {
+        } else if (arg == "-v") {
             verbose = true;
-        }
-        else if (arg == "-i")
-        {
+        } else if (arg == "-i") {
             intera = true;
         }
 
-        if (intera)
-        {
+        if (intera) {
             interactive();
-        }
-        else
-        {
+        } else {
             filename = argv[argc - 1];
-            if (filename.empty())
-            {
+            if (filename.empty()) {
                 std::cerr << "Error: No input file specified\n";
                 return 1;
             }
 
-						equation = ReadFile(filename);
-            ConicSolver Solver(equation, dumpLexer, verbose);
+            equation = ReadFile(filename);
+            parse(equation, dumpLexer, verbose);
         }
     }
+
+    parse("2+2*4", 1, 1);
 }
