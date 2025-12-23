@@ -1,5 +1,28 @@
 #include "parser.h"
 
+#include "internals.h"
+
+#include <cmath>
+#include <ios>
+#include <istream>
+#include <memory>
+#include <stdexcept>
+#include <type_traits>
+#include <variant>
+
+// this is a pratt parser
+// some resources i have used to learn and implement this parser
+// {
+// https://www.youtube.com/watch?v=WdlXBDHXqAs
+// https://www.youtube.com/watch?v=jIxsH3E-Hjg
+// https://www.youtube.com/watch?v=2l1Si4gSb9A
+// https://youtu.be/hi2D1K4tFT8?si=ZeVO4Bp9QD6OGpYU
+// https://youtu.be/0c8b7YfsBKs?si=HCgZzwirEiO5ITql
+// https://youtu.be/tM_S-pa4xDk?si=oyyK05sOt5blKeRl
+// https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html#Pratt-parsing-the-general-shape
+// https://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
+// }
+
 std::unordered_map<TokenTypes, std::tuple<int, int>> infixBindingPower = {
     {POWOP, std::make_tuple(60, 59)},  // the exact numbers dosen't matter the ratios do
     {MULOP, std::make_tuple(50, 51)},
@@ -73,7 +96,57 @@ Expr Parser::parse(std::vector<Token> tokens) {
     if (ts.current().type != NUL) {
         throw "Unexpected token after expression: " + TokenTypeToString(ts.current().type);
     }
+    std::cout << "\n" << "RESULT -> " << Parser::evaluate(result) << "\n";  // evaluate results
     return result;
+}
+
+template <typename U, typename T>
+bool Parser::isThenGet(T& variant, U& output) {
+    if (std::holds_alternative<U>(variant)) {
+        output = std::get<U>(variant);
+        return true;
+    }
+    return false;
+}
+
+double Parser::evaluate(Expr AST) {
+    // BinaryOp(PLUSOP):
+    //   Number(2)
+    //   BinaryOp(MULOP):
+    //     Number(2)
+    //     Number(4)
+    //
+    if (std::holds_alternative<std::shared_ptr<binaryOpNode>>(AST)) {
+        binaryOpNode NODE = (*std::get<std::shared_ptr<binaryOpNode>>(AST));
+        double accum {};
+        switch (NODE.op) {
+        case PLUSOP:
+            return Parser::evaluate(NODE.left) + Parser::evaluate(NODE.right);
+
+        case SUBOP:
+
+            return Parser::evaluate(NODE.left) - Parser::evaluate(NODE.right);
+
+        case MULOP:
+
+            return Parser::evaluate(NODE.left) * Parser::evaluate(NODE.right);
+        case DIVOP:
+
+            return Parser::evaluate(NODE.left) / Parser::evaluate(NODE.right);
+
+        case POWOP:
+
+            return std::pow(Parser::evaluate(NODE.left), Parser::evaluate(NODE.right));
+
+        default:
+
+            throw std::runtime_error("NOT IMPLEMENTED");
+        }
+    } else if (std::holds_alternative<numberNode>(AST)) {
+        return std::get<numberNode>(AST).value;
+    } else {
+        return std::get<numberNode>(AST).value;
+    }
 }
 
 Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
@@ -81,6 +154,7 @@ Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
     ts.advance();
 
     // parse the PREFIX expression (the left side)
+    //
     Expr left = parsePrefixExpression(token, ts);
 
     // the main parsing loop - this is where we handle INFIX operators
@@ -113,7 +187,7 @@ Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
         ts.advance();
 
         Expr right = parseExpression(ts, rbp);
-        left = std::make_unique<binaryOpNode>(
+        left = std::make_shared<binaryOpNode>(
             binaryOpNode {token.type, std::move(left), std::move(right)});
     }
 
@@ -146,7 +220,7 @@ Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
         return expr;
     }
 
-    case PLUSOP:
+    case PLUSOP:  // this will fall through to SUBOP
     case SUBOP: {
         int power = getPrefixBidingPower(token.type);
         // recursively parse the operand with this binding power

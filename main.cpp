@@ -81,5 +81,5 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    parse("2+2*4", 1, 1);
+    parse("21 + 3 * 2 - 4 /2", 1, 1);
 }
