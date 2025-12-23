@@ -1,7 +1,8 @@
-#include "internals.h"
-#include "parser.h"
-#include "prints.h"
-
+#include "lexer.hpp"
+#include "parser.hpp"
+#include "helpers.hpp"
+#include <fstream>
+#include <cstdlib>
 #include <fstream>
 #include <string>
 #include <strings.h>
@@ -25,7 +26,8 @@ std::string ReadFile(std::string filename) {
 }
 
 void parse(std::string eq, bool dump, bool isVerbose) {
-    std::vector<Token> tokens = Lex(eq, dump, isVerbose);
+		Lexer lexer = Lexer("2+2/4");
+    std::vector<Token> tokens = lexer.tokenize();
     print_ast(Parser::parse(tokens));
 }
 

@@ -1,116 +1,153 @@
-#include "internals.h"
+
+#include "lexer.hpp"
+
+#include "helpers.hpp"
 
 #include <bits/stdc++.h>
 #include <cctype>
-#include <regex>
-#include <sstream>
+#include <optional>
 #include <string>
-#include <tuple>
+#include <unordered_map>
 #include <vector>
 
-bool isDigitString(std::string str) {
-    for (char x : str) {
-        if (!(std::isdigit(x))) {
-            return false;
-        }
-    }
-    return true;
+Lexer::Lexer(std::string source_code) {
+    this->source_code = source_code;
+    this->pos = 0;
+    this->line = 1;
+    this->column = 1;
+    this->currentChar = this->source_code[0];
 }
 
-int getTermVariableIndex(std::string strTerm, int index = 0) {
-    while (isdigit(strTerm[index])) {
-        index++;
-    }
-    return index;
-}
-
-std::vector<std::string> split(std::string base, char delim) {
-    std::stringstream ss(base);
-    std::string temp;
-    std::vector<std::string> v;
-    while (std::getline(ss, temp, delim)) {
-        v.emplace_back(temp);
+void Lexer::advance() {
+    if (this->currentChar.has_value() && this->currentChar.value() == '\n') {
+        this->line += 1;
+        this->column = 0;
     }
 
-    printContainer(v);
-    return v;
-}
-
-TokenTypes getType(char x) {
-    if (std::isdigit(x)) {
-        return NUM;
+    this->pos++;
+		this->column++;
+    if (static_cast<unsigned int>(this->pos) >= this->source_code.size()) {
+        this->currentChar = std::nullopt;  // reached end of file;
     } else {
-        return VAR;
+        this->currentChar = this->source_code[this->pos];
     }
 }
 
-std::tuple<Token, std::string> genToken(char x, TokenTypes TYPE, std::string equation) {
-    if (std::isdigit(x))
-        return std::make_tuple(Token {std::stod(std::string {x}), NUM},
-                               equation.substr(1, equation.size()));
-    return std::make_tuple(Token {(std::string() + x), TYPE}, equation.substr(1, equation.size()));
+std::optional<char> Lexer::peek(int offset = 1) {
+    int newpos = this->pos + offset;
+    if (static_cast<unsigned int>(newpos) > this->source_code.size()) {
+        return {};
+    }
+    return this->source_code[newpos];
 }
 
-std::tuple<Token, std::string>
-_lex(std::string tokenBuilder, std::string equation, TokenTypes last_type = NUL) {
-    char x = equation[0];
-    if (x == ' ') {  // skip spaces
+void Lexer::skipWhitSpace() {
+    while (this->currentChar.has_value() &&
+           std::isspace(static_cast<unsigned char>(this->currentChar.value())))
 
-        return _lex(tokenBuilder, equation.substr(1, equation.size()), last_type);
-    }
-
-    if (last_type != getType(x) && last_type != NUL) {
-        if (isDigitString(tokenBuilder))
-            return make_tuple(Token {std::stod(std::string {tokenBuilder}), last_type}, equation);
-    }
-    switch (x) {
-    case '+':
-        return genToken(x, PLUSOP, equation);
-    case '-':
-        return genToken(x, SUBOP, equation);
-    case '*':
-        return genToken(x, MULOP, equation);
-    case '/':
-        return genToken(x, DIVOP, equation);
-    case '^':
-        return genToken(x, POWOP, equation);
-    case '(':
-        return genToken(x, OPENPAR, equation);
-    case ')':
-        return genToken(x, CLOSEDPAR, equation);
-    };
-
-    if (std::isdigit(x) && (last_type == NUM || last_type == NUL)) {
-        tokenBuilder += x;
-        return _lex(tokenBuilder,
-                    equation.substr(1, equation.size()),
-                    NUM);  // remove the first charachter
-    }
-
-    return std::make_tuple(Token {(std::string() + x), VAR}, equation.substr(1, equation.size()));
+        this->advance();
 }
 
-std::vector<Token> Lex(std::string equation, bool dump = false, bool verbose = false) {
-    std::vector<Token> Tokens;
-    std::vector<Token> x;
-    while (equation.size() != 0) {
-        std::tuple<Token, std::string> y;
-
-        y = _lex("", equation);
-        if (verbose) {
-            std::cout << "\n" << std::get<0>(y) << "\n";
+void Lexer::skipComments() {
+    if (this->currentChar.value() == '#') {
+        while (this->currentChar.has_value() && this->currentChar.value() != '\n') {
+            this->advance();
         }
-        x.emplace_back(std::get<0>(y));
 
-        equation = std::get<1>(y);
+        this->advance();  // skip the last \n;
+    }
+}
+
+Token Lexer::readNumber() {
+    int startLine = this->line;
+    int startColumn = this->column;
+    std::string numberBuffer;
+
+    while (this->currentChar.has_value() && std::isdigit(this->currentChar.value())) {
+        numberBuffer += this->currentChar.value();
+        this->advance();
     }
 
-    x.emplace_back(Token {"", NUL});  // add nul
-    printContainer(x);
-    if (dump) {
-        writeToFile("dump.lex", x);
-        std::cout << "\n[TOKENS DUMPED] dump.lex\n";
+    if (this->currentChar.has_value() && this->currentChar.value() == '.' &&
+        this->peek().has_value() && std::isdigit(this->peek().value())) {
+        numberBuffer += this->currentChar.value();
+        this->advance();
+    }
+    // after decimal
+    while (this->currentChar.has_value() && std::isdigit(this->currentChar.value())) {
+        numberBuffer += this->currentChar.value();
+        this->advance();
+    }
+    return Token {NUM, std::stod(numberBuffer), startLine, startColumn};
+}
+
+Token Lexer::readIdentifier() {
+    int startLine = this->line;
+    int startColumn = this->column;
+    std::string identifierBuffer;
+    // read alphanumeric and _
+    while (this->currentChar.has_value() &&
+           (std::isalnum(this->currentChar.value()) || this->currentChar.value() == '_')) {
+        identifierBuffer += this->currentChar.value();
+        this->advance();
+    }
+    return Token {IDENTIFIER, identifierBuffer, startLine, startColumn};
+}
+
+Token Lexer::genNextToken() {
+    while (this->currentChar.has_value()) {
+        if (std::isspace(this->currentChar.value())) {
+            this->skipWhitSpace();
+            continue;
+        }
+        if (this->currentChar.value() == '#') {
+            this->skipComments();
+            continue;
+        }
+
+        break;
+    }
+    int startLine = this->line;
+    int startColumn = this->column;
+
+    if (std::isdigit(this->currentChar.value())) {
+        return this->readNumber();
+    }
+    if (std::isalnum(this->currentChar.value()) || this->currentChar.value() == '_') {
+        return this->readIdentifier();
     }
 
-    return x;
+    std::unordered_map<char, TokenTypes> singleCharachterTokens = {
+        {'+', PLUSOP},
+        {'-', SUBOP},
+        {'*', MULOP},
+        {'/', DIVOP},
+        {'(', OPENPAR},
+        {')', CLOSEDPAR},
+        {',', COMMA},
+        {'^', POWOP},
+        {'=', ASSIGN},
+    };
+    if (singleCharachterTokens.contains(this->currentChar.value())) {
+        char ch = this->currentChar.value();
+        TokenTypes ttype = singleCharachterTokens[ch];
+        this->advance();
+        return Token(ttype, std::string {ch}, startLine, startColumn);
+    }
+
+    char unknownChar = this->currentChar.value();
+    this->advance();
+    return Token(UNKNOWN, std::string {unknownChar}, startLine, startColumn);
+}
+
+std::vector<Token> Lexer::tokenize() {
+    std::vector<Token> tokens;
+    while (this->currentChar.has_value()) {
+        Token token = this->genNextToken();
+        tokens.emplace_back(token);
+    }
+
+		tokens.emplace_back(Token{ENDOFFILE,"",this->line,this->column});
+    printContainer(tokens);
+    return tokens;
 }

@@ -1,15 +1,47 @@
-#ifndef AST_PRINTER_H
-#define AST_PRINTER_H
+#pragma once
 
-#include "parser.h"
-
+#include "parser.hpp"
+#include "lexer.hpp"
 #include <iostream>
-#include <memory>
-#include <string>
-#include <variant>
+#include <vector>
+#include <fstream>
+inline void printContainer(const std::vector<std::tuple<Token, std::string>>& vec) {
+    std::cout << "[\n";
+    for (const auto& [token, str] : vec) {
+        std::cout << "  (" << token << ", \"" << str << "\")\n";
+    }
+    std::cout << "]\n";
+}
 
-// THIS HEADER FILE WAS CREATED BY AI (don't have time for it) will rewrite
-// later.
+inline void printContainer(const std::tuple<std::string, std::string, bool>& t) {
+    const auto& [str1, str2, flag] = t;
+    std::cout << "(" << str1 << ", " << str2 << ", " << std::boolalpha << flag << ")\n";
+}
+
+template <typename T>
+void printContainer(const std::vector<T>& vec) {
+    for (T item : vec) {
+        std::cout << item << "\n";
+    }
+}
+
+inline int writeToFile(std::string filename, const std::vector<Token>& tokens) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Unable to open file: " << filename << std::endl;
+        return 1;
+    }
+
+    for (const auto& token : tokens) {
+        file << token << "\n";
+    }
+
+    file.close();
+    return 0;
+}
+
+// THIS PART OF THE FILE WAS CREATED BY AI (don't have time for it) will rewrite
+// later. NO AI WAS USED elsewhere!
 
 // Helper function to create indentation string
 inline std::string getIndent(int indent) {
@@ -54,8 +86,8 @@ inline void printExpr(const Expr& expr, int indent) {
         [indent](const auto& node) {
             using T = std::decay_t<decltype(node)>;
 
-            if constexpr (std::is_same_v<T, std::unique_ptr<binaryOpNode>>) {
-                // Dereference the unique_ptr to get the actual binaryOpNode
+            if constexpr (std::is_same_v<T, std::shared_ptr<binaryOpNode>>) {
+                // Dereference the shared_ptr to get the actual binaryOpNode
                 if (node) {
                     printNode(*node, indent);
                 } else {
@@ -63,7 +95,7 @@ inline void printExpr(const Expr& expr, int indent) {
                 }
             } else {
                 // For numberNode, variableNode, and UnaryOpNode (not wrapped in
-                // unique_ptr)
+                // shared_ptr)
                 printNode(node, indent);
             }
         },
@@ -74,5 +106,3 @@ inline void printExpr(const Expr& expr, int indent) {
 inline void print_ast(const Expr& expr, int indent = 0) {
     printExpr(expr, indent);
 }
-
-#endif  // AST_PRINTER_H
