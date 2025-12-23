@@ -1,11 +1,13 @@
 #include "parser.hpp"
 
+#include "helpers.hpp"
 #include "lexer.hpp"
-#include <unordered_map>
 
 #include <cmath>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <variant>
 
 // this is a pratt parser
@@ -30,18 +32,17 @@ std::unordered_map<TokenTypes, std::tuple<int, int>> infixBindingPower = {
 
 std::unordered_map<TokenTypes, int> prefixBidingPower = {{PLUSOP, 70}, {SUBOP, 70}};
 
-std::unordered_map<TokenTypes, std::string> ttts = {
-    {PLUSOP, "PLUSOP"},
-    {SUBOP, "SUBOP"},
-    {DIVOP, "DIVOP"},
-    {MULOP, "MULOP"},
-    {POWOP, "POWOP"},
-    {NUM, "NUM"},
-    {VAR, "VAR"},
-    {ENDOFFILE, "ENDOFFILE"},
-    {OPENPAR, "OPENPAR"},
-    {CLOSEDPAR, "CLOSEDPAR"},
-};
+std::unordered_map<TokenTypes, std::string> ttts = {{PLUSOP, "PLUSOP"},
+                                                    {SUBOP, "SUBOP"},
+                                                    {DIVOP, "DIVOP"},
+                                                    {MULOP, "MULOP"},
+                                                    {POWOP, "POWOP"},
+                                                    {NUM, "NUM"},
+                                                    {VAR, "VAR"},
+                                                    {ENDOFFILE, "ENDOFFILE"},
+                                                    {OPENPAR, "OPENPAR"},
+                                                    {CLOSEDPAR, "CLOSEDPAR"},
+                                                    {IDENTIFIER, "IDENTIFIER"}};
 
 std::string TokenTypeToString(TokenTypes type) {
     return ttts[type];
@@ -62,12 +63,14 @@ void tokenStream::advance() {
     this->position++;
 }
 
-bool tokenStream::expect(TokenTypes expected) {
+bool tokenStream::expect(TokenTypes expected,const Token& t) {
     bool isExpected = (current().type == expected);
     if (!isExpected)
-        throw("UNEXPECTED TYPE wanted " + TokenTypeToString(expected) + " GOT " +
-              TokenTypeToString(current().type));
-    return isExpected;
+			if(expected == CLOSEDPAR){
+				throw std::runtime_error(std::string{"forgot ) "} + " try adding ) at " + std::to_string(t.line) + ":" + std::to_string(t.col)  );
+				
+			}
+   return isExpected;
 }
 
 int getPrefixBidingPower(TokenTypes tokenType) {
@@ -75,7 +78,8 @@ int getPrefixBidingPower(TokenTypes tokenType) {
         return prefixBidingPower[tokenType];
     }
 
-    throw TokenTypeToString(tokenType) + " does not have a prefix binding power";
+    throw std::runtime_error(TokenTypeToString(tokenType) +
+                             " does not have a prefix binding power");
 }
 
 std::tuple<int, int> getInfixBindingPower(TokenTypes tokenType) {
@@ -86,15 +90,14 @@ std::tuple<int, int> getInfixBindingPower(TokenTypes tokenType) {
     return std::make_tuple(-1, -1);
 }
 
-Expr Parser::parse(std::vector<Token> tokens) {
+double Parser::parse(std::vector<Token> tokens) {
     tokenStream ts = tokenStream(tokens);
     Expr result = parseExpression(ts, 0);
-
     if (ts.current().type != ENDOFFILE) {
-        throw "Unexpected token after expression: " + TokenTypeToString(ts.current().type);
+        throw std::runtime_error("Unexpected token after expression: " +
+                                 TokenTypeToString(ts.current().type));
     }
-    std::cout << "\n" << "RESULT -> " << Parser::evaluate(result) << "\n";  // evaluate results
-    return result;
+    return Parser::evaluate(result);
 }
 
 template <typename U, typename T>
@@ -136,13 +139,19 @@ double Parser::evaluate(Expr AST) {
 
         default:
 
-            throw std::runtime_error("NOT IMPLEMENTED");
+            throw std::runtime_error("NOT IMPLEMENTED SWITCH");
         }
     } else if (std::holds_alternative<numberNode>(AST)) {
         return std::get<numberNode>(AST).value;
-    } else {
-        return std::get<numberNode>(AST).value;
+    } else if (std::holds_alternative<identifierNode>(AST)) {
+        identifierNode n = std::get<identifierNode>(AST);			
+				if(n.name == "SIN"){
+					double val = evaluate(n.args[0]);
+					return std::sin((val  * M_PI / 180.0));
+				}
+		
     }
+    throw std::runtime_error("NOT IMPLEMENTED IFS");
 }
 
 Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
@@ -196,22 +205,26 @@ Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
         if (std::holds_alternative<double>(token.value))
             return numberNode {std::get<double>(token.value)};
         else
-            throw "TOKENTYPE VALUE MISMATCH";
+            throw std::runtime_error("TOKENTYPE VALUE MISMATCH");
     }
 
     case VAR: {
         if (std::holds_alternative<std::string>(token.value))
             return variableNode {std::get<std::string>(token.value)};
         else
-            throw "TOKENTYPE VALUE MISMATCH";
+            throw std::runtime_error("TOKENTYPE VALUE MISMATCH");
     }
 
+    case IDENTIFIER: {
+        Expr expr = parseExpression(ts, 0);
+        return identifierNode {std::get<std::string>(token.value), {expr}};
+    }
     case OPENPAR: {
         // parenthesis expression (....)
         // recursively parse its insides with binding power of 0
         // binding power of 0 means accept anything
         Expr expr = parseExpression(ts, 0);
-        ts.expect(CLOSEDPAR);  // we MUST have ) after parsing what's inside ()
+        ts.expect(CLOSEDPAR,token);  // we MUST have ) after parsing what's inside ()
         ts.advance();  // move past the CLOSEDPAR
         return expr;
     }
@@ -230,12 +243,13 @@ Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
             variableNode oprn = std::get<variableNode>(operand);
             return UnaryOpNode {token.type, oprn};
         } else {
-            throw "Unary operator can only be applied to numbers or variables";
+            throw std::runtime_error("Unary operator can only be applied to numbers or variables");
         }
     }
 
     default: {
-        throw "Unexpected token at start of expression: " + TokenTypeToString(token.type);
+        throw std::runtime_error("Unexpected token at start of expression: " +
+                                 TokenTypeToString(token.type));
     }
     }
 }

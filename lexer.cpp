@@ -148,6 +148,5 @@ std::vector<Token> Lexer::tokenize() {
     }
 
 		tokens.emplace_back(Token{ENDOFFILE,"",this->line,this->column});
-    printContainer(tokens);
     return tokens;
 }
