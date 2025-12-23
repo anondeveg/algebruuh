@@ -1,13 +1,11 @@
-#include "parser.h"
+#include "parser.hpp"
 
-#include "internals.h"
+#include "lexer.hpp"
+#include <unordered_map>
 
 #include <cmath>
-#include <ios>
-#include <istream>
 #include <memory>
 #include <stdexcept>
-#include <type_traits>
 #include <variant>
 
 // this is a pratt parser
@@ -40,7 +38,7 @@ std::unordered_map<TokenTypes, std::string> ttts = {
     {POWOP, "POWOP"},
     {NUM, "NUM"},
     {VAR, "VAR"},
-    {NUL, "NUL"},
+    {ENDOFFILE, "ENDOFFILE"},
     {OPENPAR, "OPENPAR"},
     {CLOSEDPAR, "CLOSEDPAR"},
 };
@@ -55,10 +53,9 @@ tokenStream::tokenStream(std::vector<Token> tokens) {
 }
 
 Token tokenStream::current() {
-    if (this->position < this->tokens.size()) {
+    if (static_cast<unsigned int>(this->position) < this->tokens.size()) {
         return this->tokens[this->position];
     }
-    return Token {"", NUL};
 }
 
 void tokenStream::advance() {
@@ -93,7 +90,7 @@ Expr Parser::parse(std::vector<Token> tokens) {
     tokenStream ts = tokenStream(tokens);
     Expr result = parseExpression(ts, 0);
 
-    if (ts.current().type != NUL) {
+    if (ts.current().type != ENDOFFILE) {
         throw "Unexpected token after expression: " + TokenTypeToString(ts.current().type);
     }
     std::cout << "\n" << "RESULT -> " << Parser::evaluate(result) << "\n";  // evaluate results
@@ -118,7 +115,6 @@ double Parser::evaluate(Expr AST) {
     //
     if (std::holds_alternative<std::shared_ptr<binaryOpNode>>(AST)) {
         binaryOpNode NODE = (*std::get<std::shared_ptr<binaryOpNode>>(AST));
-        double accum {};
         switch (NODE.op) {
         case PLUSOP:
             return Parser::evaluate(NODE.left) + Parser::evaluate(NODE.right);
@@ -163,7 +159,7 @@ Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
     while (true) {
         token = ts.current();  // get current token for checking
 
-        if (token.type == CLOSEDPAR || token.type == NUL)
+        if (token.type == CLOSEDPAR || token.type == ENDOFFILE)
             // hit end of expression
             break;
 

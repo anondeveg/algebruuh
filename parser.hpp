@@ -1,12 +1,9 @@
-#ifndef PARSER_H
-#define PARSER_H
-
-#include "internals.h"
+#pragma once
+#include "lexer.hpp"
 
 #include <memory>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -66,4 +63,3 @@ class Parser {
     static bool isThenGet(T& variant, U& output);
 };
 
-#endif
