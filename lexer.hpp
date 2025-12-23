@@ -1,5 +1,4 @@
-#ifndef LEXER_H
-#define LEXER_H
+#pragma once
 #include <iostream>
 #include <optional>
 #include <string>
@@ -65,4 +64,3 @@ inline std::ostream& operator<<(std::ostream& o, const Token& token) {
         return o << "\nToken:\t" << std::get<std::string>(token.value) << "\nType:\t" << token.type;
 }
 
-#endif

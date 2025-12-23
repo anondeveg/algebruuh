@@ -10,6 +10,7 @@ ConicCalc
 
 
 # files
+*.dump
 *lex
 *.bruh
 # oil-nvim

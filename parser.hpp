@@ -1,6 +1,4 @@
-#ifndef PARSER_H
-#define PARSER_H
-
+#pragma once
 #include "lexer.hpp"
 
 #include <memory>
@@ -65,4 +63,3 @@ class Parser {
     static bool isThenGet(T& variant, U& output);
 };
 
-#endif
