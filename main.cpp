@@ -1,7 +1,7 @@
+#include "helpers.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
-#include "helpers.hpp"
-#include <fstream>
+
 #include <cstdlib>
 #include <fstream>
 #include <string>
@@ -26,9 +26,9 @@ std::string ReadFile(std::string filename) {
 }
 
 void parse(std::string eq, bool dump, bool isVerbose) {
-		Lexer lexer = Lexer("2+2/4");
+    Lexer lexer = Lexer(eq);
     std::vector<Token> tokens = lexer.tokenize();
-    print_ast(Parser::parse(tokens));
+    std ::cout << Parser::parse(tokens) << '\n';
 }
 
 void interactive() {
@@ -83,5 +83,4 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    parse("21 + 3 * 2 - 4 /2", 1, 1);
 }

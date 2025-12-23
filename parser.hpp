@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -11,12 +12,19 @@ struct binaryOpNode;
 struct variableNode;
 struct numberNode;
 struct UnaryOpNode;
-
+struct identifierNode;
 // type alias for expression variant
-using Expr = std::variant<variableNode, numberNode, std::shared_ptr<binaryOpNode>, UnaryOpNode>;
+
+using Expr = std::
+    variant<variableNode, numberNode, std::shared_ptr<binaryOpNode>, UnaryOpNode, identifierNode>;
 
 struct variableNode {
     std::string name;
+};
+
+struct identifierNode {
+    std::string name;
+		std::vector<Expr> args;
 };
 
 struct numberNode {
@@ -44,7 +52,7 @@ class tokenStream {
     tokenStream(std::vector<Token> tokens);
     Token current();
     void advance();
-    bool expect(TokenTypes expected);
+    bool expect(TokenTypes expected, const Token& t);
 };
 
 // helper functions
@@ -54,7 +62,7 @@ std::tuple<int, int> getInfixBindingPower(TokenTypes tokenType);
 
 class Parser {
   public:
-    static Expr parse(std::vector<Token> tokens);
+    static double parse(std::vector<Token> tokens);
     static Expr parseExpression(tokenStream& ts, int minBindingPower);
     static Expr parsePrefixExpression(const Token& token, tokenStream& ts);
     static double evaluate(Expr AST);
@@ -62,4 +70,3 @@ class Parser {
     template <typename U, typename T>
     static bool isThenGet(T& variant, U& output);
 };
-

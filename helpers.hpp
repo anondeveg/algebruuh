@@ -1,10 +1,12 @@
 #pragma once
 
-#include "parser.hpp"
 #include "lexer.hpp"
+#include "parser.hpp"
+
+#include <fstream>
 #include <iostream>
 #include <vector>
-#include <fstream>
+
 inline void printContainer(const std::vector<std::tuple<Token, std::string>>& vec) {
     std::cout << "[\n";
     for (const auto& [token, str] : vec) {
@@ -54,6 +56,12 @@ void printExpr(const Expr& expr, int indent = 0);
 // Print a numberNode
 inline void printNode(const numberNode& node, int indent) {
     std::cout << getIndent(indent) << "Number(" << node.value << ")\n";
+}
+
+inline void printNode(const identifierNode& node, int indent) {
+    std::cout << getIndent(indent) << node.name << "(";
+    printExpr(node.args[0]);
+    std::cout << "))";
 }
 
 // Print a variableNode
