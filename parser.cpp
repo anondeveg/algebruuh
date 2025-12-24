@@ -8,6 +8,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <stdexcept>
@@ -100,11 +101,19 @@ std::tuple<int, int> getInfixBindingPower(TokenTypes tokenType) {
 
 double Parser::parse(std::vector<Token> tokens) {
     tokenStream ts = tokenStream(tokens);
-    Expr result = parseExpression(ts, 0);
+    Expr result = Parser::parseProgram(ts);
+
     if (ts.current().type != ENDOFFILE) {
-        throw std::runtime_error("Unexpected token after expression: " +
-                                 TokenTypeToString(ts.current().type));
+        std::string val;
+        if (std::holds_alternative<std::string>(ts.current().value)) {
+            std::string val = std::get<std::string>(ts.current().value);
+        } else {
+            std::string val = std::to_string(std::get<double>(ts.current().value));
+        }
+				throw std::runtime_error("unexpected token " + val + " did you forget a ; ");
     }
+
+
     return Parser::evaluate(result);
 }
 
@@ -218,6 +227,13 @@ double Parser::evaluate(Expr AST) {
         } else if (identifierName == "INF") {
             return INFINITY;
         }
+    } else if (std::holds_alternative<sequenceNode>(AST)) {
+        sequenceNode n = std::get<sequenceNode>(AST);
+        double result = 0;
+        for (const auto& expr : n.expressions) {
+            result = evaluate(expr);  // evaluate each keep last result
+        }
+        return result;  // return the last expression's value
     }
 }
 
@@ -235,7 +251,7 @@ Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
     while (true) {
         token = ts.current();  // get current token for checking
 
-        if (token.type == CLOSEDPAR || token.type == ENDOFFILE)
+        if (token.type == CLOSEDPAR || token.type == ENDOFFILE || token.type == SEMICOLON)
             // hit end of expression
             break;
 
@@ -266,6 +282,30 @@ Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
     return left;
 }
 
+Expr Parser::parseProgram(tokenStream& ts) {
+    std::vector<Expr> expressions;
+    while (ts.current().type != ENDOFFILE) {
+        Expr expr = parseExpression(ts, 0);
+        expressions.push_back(expr);
+        if (ts.current().type == SEMICOLON) {
+            ts.advance();  // move past the semicolon
+
+            // if there's nothing after the semicolon
+            if (ts.current().type == ENDOFFILE) {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+
+    if (expressions.size() == 1) {
+        return expressions[0];
+    }
+
+    return sequenceNode {expressions};
+}
+
 Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
     switch (token.type) {
     case NUM: {
@@ -289,6 +329,9 @@ Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
     case FUNCTION: {
         Expr expr = parseExpression(ts, 0);
         return functionNode {std::get<std::string>(token.value), {expr}};
+    }
+    case SEMICOLON: {
+        return identifierNode(std::get<std::string>(token.value), {});
     }
     case OPENPAR: {
         // parenthesis expression (....)

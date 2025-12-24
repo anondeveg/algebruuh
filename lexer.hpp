@@ -22,6 +22,7 @@ enum TokenTypes {
     ENDOFFILE,  // 13
     ASSIGN, // 14
 		FUNCTION, // 15
+		SEMICOLON, // 16
 };
 
 struct Token {
@@ -30,6 +31,7 @@ struct Token {
     int line;
     int col;
 };
+
 
 class Lexer {
 	public:

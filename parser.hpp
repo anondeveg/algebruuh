@@ -14,6 +14,7 @@ struct numberNode;
 struct UnaryOpNode;
 struct identifierNode;
 struct functionNode;
+struct sequenceNode;
 // type alias for expression variant
 
 using Expr = std::variant<variableNode,
@@ -21,7 +22,12 @@ using Expr = std::variant<variableNode,
                           std::shared_ptr<binaryOpNode>,
                           UnaryOpNode,
                           identifierNode,
-                          functionNode>;
+                          functionNode,
+                          sequenceNode>;
+
+struct sequenceNode {
+    std::vector<Expr> expressions;
+};
 
 struct variableNode {
     std::string name;
@@ -38,9 +44,7 @@ struct identifierNode {
 };
 
 struct numberNode {
-    double value;
-};
-
+    double value; };
 struct UnaryOpNode {
     TokenTypes op;
     std::variant<variableNode, numberNode> operand;
@@ -76,7 +80,7 @@ class Parser {
     static Expr parseExpression(tokenStream& ts, int minBindingPower);
     static Expr parsePrefixExpression(const Token& token, tokenStream& ts);
     static double evaluate(Expr AST);
-
+		static Expr parseProgram(tokenStream& ts);
     template <typename U, typename T>
     static bool isThenGet(T& variant, U& output);
 };

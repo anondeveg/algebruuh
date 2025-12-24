@@ -87,9 +87,9 @@ Token Lexer::readAlphanumeric() {
     int startColumn = this->column;
     std::string alphanumericBuffer;
     // read alphanumeric and _
-    while (this->currentChar.has_value() &&(
-           (std::isalnum(this->currentChar.value()) ||
-            this->currentChar.value() == '_')) && currentChar.value() != '(') {
+    while (this->currentChar.has_value() &&
+           ((std::isalnum(this->currentChar.value()) || this->currentChar.value() == '_')) &&
+           currentChar.value() != '(') {
         alphanumericBuffer += this->currentChar.value();
         this->advance();
     }
@@ -117,6 +117,10 @@ Token Lexer::genNextToken() {
     int startLine = this->line;
     int startColumn = this->column;
 
+    if (this->currentChar.has_value() && this->currentChar.value() == ';') {
+        advance();
+        return Token {SEMICOLON, ";", startLine, startColumn};
+    }
     if (this->currentChar.has_value() && std::isdigit(this->currentChar.value())) {
         return this->readNumber();
     }
