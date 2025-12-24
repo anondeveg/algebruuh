@@ -13,18 +13,28 @@ struct variableNode;
 struct numberNode;
 struct UnaryOpNode;
 struct identifierNode;
+struct functionNode;
 // type alias for expression variant
 
-using Expr = std::
-    variant<variableNode, numberNode, std::shared_ptr<binaryOpNode>, UnaryOpNode, identifierNode>;
+using Expr = std::variant<variableNode,
+                          numberNode,
+                          std::shared_ptr<binaryOpNode>,
+                          UnaryOpNode,
+                          identifierNode,
+                          functionNode>;
 
 struct variableNode {
     std::string name;
 };
 
+struct functionNode {
+    std::string name;
+    std::vector<Expr> args;
+};
+
 struct identifierNode {
     std::string name;
-		std::vector<Expr> args;
+    double value = 0;
 };
 
 struct numberNode {

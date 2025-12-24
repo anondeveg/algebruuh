@@ -54,7 +54,7 @@ void Lexer::skipComments() {
             this->advance();
         }
         if (this->currentChar.has_value()) {
-            this->advance();  // ← Add this!
+            this->advance();
         }
     }
 }
@@ -82,17 +82,23 @@ Token Lexer::readNumber() {
     return Token {NUM, std::stod(numberBuffer), startLine, startColumn};
 }
 
-Token Lexer::readIdentifier() {
+Token Lexer::readAlphanumeric() {
     int startLine = this->line;
     int startColumn = this->column;
-    std::string identifierBuffer;
+    std::string alphanumericBuffer;
     // read alphanumeric and _
-    while (this->currentChar.has_value() &&
-           (std::isalnum(this->currentChar.value()) || this->currentChar.value() == '_')) {
-        identifierBuffer += this->currentChar.value();
+    while (this->currentChar.has_value() &&(
+           (std::isalnum(this->currentChar.value()) ||
+            this->currentChar.value() == '_')) && currentChar.value() != '(') {
+        alphanumericBuffer += this->currentChar.value();
         this->advance();
     }
-    return Token {IDENTIFIER, identifierBuffer, startLine, startColumn};
+    if (currentChar.has_value() && currentChar.value() == '(') {
+        return Token {FUNCTION, alphanumericBuffer, startLine, startColumn};
+
+    } else {
+        return Token {IDENTIFIER, alphanumericBuffer, startLine, startColumn};
+    }
 }
 
 Token Lexer::genNextToken() {
@@ -115,8 +121,9 @@ Token Lexer::genNextToken() {
         return this->readNumber();
     }
     if (this->currentChar.has_value() &&
+
         (std::isalnum(this->currentChar.value()) || this->currentChar.value() == '_')) {
-        return this->readIdentifier();
+        return this->readAlphanumeric();
     }
 
     std::unordered_map<char, TokenTypes> singleCharachterTokens = {

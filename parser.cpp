@@ -8,6 +8,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -36,17 +37,20 @@ std::unordered_map<TokenTypes, std::tuple<int, int>> infixBindingPower = {
 
 std::unordered_map<TokenTypes, int> prefixBidingPower = {{PLUSOP, 70}, {SUBOP, 70}};
 
-std::unordered_map<TokenTypes, std::string> ttts = {{PLUSOP, "PLUSOP"},
-                                                    {SUBOP, "SUBOP"},
-                                                    {DIVOP, "DIVOP"},
-                                                    {MULOP, "MULOP"},
-                                                    {POWOP, "POWOP"},
-                                                    {NUM, "NUM"},
-                                                    {VAR, "VAR"},
-                                                    {ENDOFFILE, "ENDOFFILE"},
-                                                    {OPENPAR, "OPENPAR"},
-                                                    {CLOSEDPAR, "CLOSEDPAR"},
-                                                    {IDENTIFIER, "IDENTIFIER"}};
+std::unordered_map<TokenTypes, std::string> ttts = {
+    {PLUSOP, "PLUSOP"},
+    {SUBOP, "SUBOP"},
+    {DIVOP, "DIVOP"},
+    {MULOP, "MULOP"},
+    {POWOP, "POWOP"},
+    {NUM, "NUM"},
+    {VAR, "VAR"},
+    {ENDOFFILE, "ENDOFFILE"},
+    {OPENPAR, "OPENPAR"},
+    {CLOSEDPAR, "CLOSEDPAR"},
+    {IDENTIFIER, "IDENTIFIER"},
+    {FUNCTION, "FUNCTION"},
+};
 
 std::string TokenTypeToString(TokenTypes type) {
     return ttts[type];
@@ -147,8 +151,8 @@ double Parser::evaluate(Expr AST) {
         }
     } else if (std::holds_alternative<numberNode>(AST)) {
         return std::get<numberNode>(AST).value;
-    } else if (std::holds_alternative<identifierNode>(AST)) {
-        identifierNode n = std::get<identifierNode>(AST);
+    } else if (std::holds_alternative<functionNode>(AST)) {
+        functionNode n = std::get<functionNode>(AST);
         std::string funcName = n.name;
         std::transform(funcName.begin(), funcName.end(), funcName.begin(), ::toupper);
 
@@ -157,11 +161,6 @@ double Parser::evaluate(Expr AST) {
                 double val = evaluate(n.args[0]);
                 return std::sin((val * M_PI / 180.0));
             }
-        } else if (funcName == "PI") {
-            return M_PI;
-
-        } else if (funcName == "INF") {
-            return INFINITY;
         } else if (funcName == "ABS") {
             if (n.args.size() > 0) {
                 double val = evaluate(n.args[0]);
@@ -197,7 +196,27 @@ double Parser::evaluate(Expr AST) {
                 double val = evaluate(n.args[0]);
                 return RAND(val);
             }
+        } else if (funcName == "PRINT") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                std::cout << val << "\n";
+                return val;
+            }
+        } else {
             throw std::runtime_error("NOT IMPLEMENTED IFS");
+        }
+    }
+
+    else if (std::holds_alternative<identifierNode>(AST)) {
+        identifierNode n = std::get<identifierNode>(AST);
+        std::string identifierName = n.name;
+        std::transform(
+            identifierName.begin(), identifierName.end(), identifierName.begin(), ::toupper);
+
+        if (identifierName == "PI") {
+            return M_PI;
+        } else if (identifierName == "INF") {
+            return INFINITY;
         }
     }
 }
@@ -264,8 +283,12 @@ Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
     }
 
     case IDENTIFIER: {
+        return identifierNode {std::get<std::string>(token.value), 0};
+    }
+
+    case FUNCTION: {
         Expr expr = parseExpression(ts, 0);
-        return identifierNode {std::get<std::string>(token.value), {expr}};
+        return functionNode {std::get<std::string>(token.value), {expr}};
     }
     case OPENPAR: {
         // parenthesis expression (....)
@@ -297,8 +320,9 @@ Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
     }
 
     default: {
-        throw std::runtime_error("Unexpected token at start of expression: " +
-                                 TokenTypeToString(token.type));
+        throw std::runtime_error(
+            "Unexpected token at start of expression: " + TokenTypeToString(token.type) + "at " +
+            std::to_string(token.line) + ":" + std::to_string(token.col));
     }
     }
 }

@@ -59,12 +59,16 @@ inline void printNode(const numberNode& node, int indent) {
 }
 
 inline void printNode(const identifierNode& node, int indent) {
+    std::cout << getIndent(indent) << node.name << (node.value);
+    std::cout << "))";
+}
+
+inline void printNode(const functionNode& node, int indent) {
     std::cout << getIndent(indent) << node.name << "(";
     printExpr(node.args[0]);
     std::cout << "))";
 }
 
-// Print a variableNode
 inline void printNode(const variableNode& node, int indent) {
     std::cout << getIndent(indent) << "Variable(" << node.name << ")\n";
 }
