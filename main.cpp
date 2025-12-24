@@ -1,7 +1,6 @@
 #include "helpers.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
-
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -33,7 +32,7 @@ void interactive() {
         std::string equation;
         std::cout << "\n>>>";
         std::getline(std::cin >> std::ws, equation);
-        parse(equation, 1, 1);
+        parse(equation, 0, 0);
     }
 }
 
@@ -55,7 +54,6 @@ int main(int argc, char* argv[]) {
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        bool intera = false;
         if (arg == "-d") {
             dumpLexer = true;
         } else if (arg == "-h") {
