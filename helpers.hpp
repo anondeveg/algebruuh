@@ -42,9 +42,7 @@ inline int writeToFile(std::string filename, const std::vector<Token>& tokens) {
     return 0;
 }
 
-// THIS PART OF THE FILE WAS CREATED BY AI (don't have time for it) will rewrite
-// later. NO AI WAS USED elsewhere!
-
+// THIS PART OF THE FILE WAS CREATED BY AI (don't have time for it) will rewrite later. NO AI WAS USED elsewhere!
 // Helper function to create indentation string
 inline std::string getIndent(int indent) {
     return std::string(indent * 2, ' ');
@@ -59,12 +57,23 @@ inline void printNode(const numberNode& node, int indent) {
 }
 
 inline void printNode(const identifierNode& node, int indent) {
+    std::cout << getIndent(indent) << node.name << (node.value);
+    std::cout << "))";
+}
+
+inline void printNode(const sequenceNode& node, int indent) {
+	for(Expr x:node.expressions){
+		printExpr(x,indent);
+	}
+}	
+
+
+inline void printNode(const functionNode& node, int indent) {
     std::cout << getIndent(indent) << node.name << "(";
     printExpr(node.args[0]);
     std::cout << "))";
 }
 
-// Print a variableNode
 inline void printNode(const variableNode& node, int indent) {
     std::cout << getIndent(indent) << "Variable(" << node.name << ")\n";
 }

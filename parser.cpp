@@ -1,9 +1,15 @@
 #include "parser.hpp"
 
+#include "builtins.hpp"
 #include "helpers.hpp"
 #include "lexer.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
+#include <functional>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -32,17 +38,20 @@ std::unordered_map<TokenTypes, std::tuple<int, int>> infixBindingPower = {
 
 std::unordered_map<TokenTypes, int> prefixBidingPower = {{PLUSOP, 70}, {SUBOP, 70}};
 
-std::unordered_map<TokenTypes, std::string> ttts = {{PLUSOP, "PLUSOP"},
-                                                    {SUBOP, "SUBOP"},
-                                                    {DIVOP, "DIVOP"},
-                                                    {MULOP, "MULOP"},
-                                                    {POWOP, "POWOP"},
-                                                    {NUM, "NUM"},
-                                                    {VAR, "VAR"},
-                                                    {ENDOFFILE, "ENDOFFILE"},
-                                                    {OPENPAR, "OPENPAR"},
-                                                    {CLOSEDPAR, "CLOSEDPAR"},
-                                                    {IDENTIFIER, "IDENTIFIER"}};
+std::unordered_map<TokenTypes, std::string> ttts = {
+    {PLUSOP, "PLUSOP"},
+    {SUBOP, "SUBOP"},
+    {DIVOP, "DIVOP"},
+    {MULOP, "MULOP"},
+    {POWOP, "POWOP"},
+    {NUM, "NUM"},
+    {VAR, "VAR"},
+    {ENDOFFILE, "ENDOFFILE"},
+    {OPENPAR, "OPENPAR"},
+    {CLOSEDPAR, "CLOSEDPAR"},
+    {IDENTIFIER, "IDENTIFIER"},
+    {FUNCTION, "FUNCTION"},
+};
 
 std::string TokenTypeToString(TokenTypes type) {
     return ttts[type];
@@ -63,14 +72,14 @@ void tokenStream::advance() {
     this->position++;
 }
 
-bool tokenStream::expect(TokenTypes expected,const Token& t) {
+bool tokenStream::expect(TokenTypes expected, const Token& t) {
     bool isExpected = (current().type == expected);
     if (!isExpected)
-			if(expected == CLOSEDPAR){
-				throw std::runtime_error(std::string{"forgot ) "} + " try adding ) at " + std::to_string(t.line) + ":" + std::to_string(t.col)  );
-				
-			}
-   return isExpected;
+        if (expected == CLOSEDPAR) {
+            throw std::runtime_error(std::string {"forgot ) "} + " try adding ) at " +
+                                     std::to_string(t.line) + ":" + std::to_string(t.col));
+        }
+    return isExpected;
 }
 
 int getPrefixBidingPower(TokenTypes tokenType) {
@@ -92,11 +101,19 @@ std::tuple<int, int> getInfixBindingPower(TokenTypes tokenType) {
 
 double Parser::parse(std::vector<Token> tokens) {
     tokenStream ts = tokenStream(tokens);
-    Expr result = parseExpression(ts, 0);
+    Expr result = Parser::parseProgram(ts);
+
     if (ts.current().type != ENDOFFILE) {
-        throw std::runtime_error("Unexpected token after expression: " +
-                                 TokenTypeToString(ts.current().type));
+        std::string val;
+        if (std::holds_alternative<std::string>(ts.current().value)) {
+            std::string val = std::get<std::string>(ts.current().value);
+        } else {
+            std::string val = std::to_string(std::get<double>(ts.current().value));
+        }
+				throw std::runtime_error("unexpected token " + val + " did you forget a ; ");
     }
+
+
     return Parser::evaluate(result);
 }
 
@@ -143,15 +160,81 @@ double Parser::evaluate(Expr AST) {
         }
     } else if (std::holds_alternative<numberNode>(AST)) {
         return std::get<numberNode>(AST).value;
-    } else if (std::holds_alternative<identifierNode>(AST)) {
-        identifierNode n = std::get<identifierNode>(AST);			
-				if(n.name == "SIN"){
-					double val = evaluate(n.args[0]);
-					return std::sin((val  * M_PI / 180.0));
-				}
-		
+    } else if (std::holds_alternative<functionNode>(AST)) {
+        functionNode n = std::get<functionNode>(AST);
+        std::string funcName = n.name;
+        std::transform(funcName.begin(), funcName.end(), funcName.begin(), ::toupper);
+
+        if (funcName == "SIN") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::sin((val * M_PI / 180.0));
+            }
+        } else if (funcName == "ABS") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::abs(val);
+            }
+        } else if (funcName == "FLOOR") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::floor(val);
+            }
+        } else if (funcName == "CEIL") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::ceil(val);
+            }
+        } else if (funcName == "ROUND") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::round(val);
+            }
+        } else if (funcName == "TRUNC") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::trunc(val);
+            }
+        } else if (funcName == "FACTORIAL") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return FACTORIAL(val);
+            }
+        } else if (funcName == "RAND") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return RAND(val);
+            }
+        } else if (funcName == "PRINT") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                std::cout << val << "\n";
+                return val;
+            }
+        } else {
+            throw std::runtime_error("NOT IMPLEMENTED IFS");
+        }
     }
-    throw std::runtime_error("NOT IMPLEMENTED IFS");
+
+    else if (std::holds_alternative<identifierNode>(AST)) {
+        identifierNode n = std::get<identifierNode>(AST);
+        std::string identifierName = n.name;
+        std::transform(
+            identifierName.begin(), identifierName.end(), identifierName.begin(), ::toupper);
+
+        if (identifierName == "PI") {
+            return M_PI;
+        } else if (identifierName == "INF") {
+            return INFINITY;
+        }
+    } else if (std::holds_alternative<sequenceNode>(AST)) {
+        sequenceNode n = std::get<sequenceNode>(AST);
+        double result = 0;
+        for (const auto& expr : n.expressions) {
+            result = evaluate(expr);  // evaluate each keep last result
+        }
+        return result;  // return the last expression's value
+    }
 }
 
 Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
@@ -168,7 +251,7 @@ Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
     while (true) {
         token = ts.current();  // get current token for checking
 
-        if (token.type == CLOSEDPAR || token.type == ENDOFFILE)
+        if (token.type == CLOSEDPAR || token.type == ENDOFFILE || token.type == SEMICOLON)
             // hit end of expression
             break;
 
@@ -199,6 +282,30 @@ Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
     return left;
 }
 
+Expr Parser::parseProgram(tokenStream& ts) {
+    std::vector<Expr> expressions;
+    while (ts.current().type != ENDOFFILE) {
+        Expr expr = parseExpression(ts, 0);
+        expressions.push_back(expr);
+        if (ts.current().type == SEMICOLON) {
+            ts.advance();  // move past the semicolon
+
+            // if there's nothing after the semicolon
+            if (ts.current().type == ENDOFFILE) {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+
+    if (expressions.size() == 1) {
+        return expressions[0];
+    }
+
+    return sequenceNode {expressions};
+}
+
 Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
     switch (token.type) {
     case NUM: {
@@ -216,15 +323,23 @@ Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
     }
 
     case IDENTIFIER: {
+        return identifierNode {std::get<std::string>(token.value), 0};
+    }
+
+    case FUNCTION: {
         Expr expr = parseExpression(ts, 0);
-        return identifierNode {std::get<std::string>(token.value), {expr}};
+        return functionNode {std::get<std::string>(token.value), {expr}};
+    }
+    case SEMICOLON: {
+        return identifierNode(std::get<std::string>(token.value), {});
     }
     case OPENPAR: {
         // parenthesis expression (....)
         // recursively parse its insides with binding power of 0
         // binding power of 0 means accept anything
         Expr expr = parseExpression(ts, 0);
-        ts.expect(CLOSEDPAR,token);  // we MUST have ) after parsing what's inside ()
+        ts.expect(CLOSEDPAR,
+                  token);  // we MUST have ) after parsing what's inside ()
         ts.advance();  // move past the CLOSEDPAR
         return expr;
     }
@@ -248,8 +363,9 @@ Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
     }
 
     default: {
-        throw std::runtime_error("Unexpected token at start of expression: " +
-                                 TokenTypeToString(token.type));
+        throw std::runtime_error(
+            "Unexpected token at start of expression: " + TokenTypeToString(token.type) + "at " +
+            std::to_string(token.line) + ":" + std::to_string(token.col));
     }
     }
 }

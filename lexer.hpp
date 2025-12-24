@@ -20,7 +20,9 @@ enum TokenTypes {
     COMMA,  // 11
     UNKNOWN,  // 12
     ENDOFFILE,  // 13
-    ASSIGN  // 14
+    ASSIGN, // 14
+		FUNCTION, // 15
+		SEMICOLON, // 16
 };
 
 struct Token {
@@ -29,6 +31,7 @@ struct Token {
     int line;
     int col;
 };
+
 
 class Lexer {
 	public:
@@ -50,7 +53,7 @@ class Lexer {
     void skipWhitSpace();
     void skipComments();
     Token readNumber();
-    Token readIdentifier();
+    Token readAlphanumeric();
 
     Token genNextToken();
 

@@ -1,34 +1,30 @@
 #include "helpers.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
-
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <strings.h>
 #include <unistd.h>
 #include <vector>
 
-std::string ReadFile(std::string filename) {
-    std::ifstream file(filename);
-    std::string temp {};
-    std::string code;
-    if (file.is_open()) {
-        while (getline(file, temp)) {
-            code += temp;
-        }
-        file.close();
-    } else {
-        std::cerr << "Unable to open file: " << filename << std::endl;
-    }
+bool intera = false;
 
-    return code;
+std::string ReadFile(const std::filesystem::path& path) {
+    auto&& file = std::ifstream(path);
+    auto&& buffer = std::stringstream();
+    buffer << file.rdbuf();
+    return buffer.str();
 }
 
 void parse(std::string eq, bool dump, bool isVerbose) {
     Lexer lexer = Lexer(eq);
     std::vector<Token> tokens = lexer.tokenize();
-    std ::cout << Parser::parse(tokens) << '\n';
+    if (isVerbose)
+        printContainer(tokens);
+    (Parser::parse(tokens));
 }
 
 void interactive() {
@@ -36,7 +32,7 @@ void interactive() {
         std::string equation;
         std::cout << "\n>>>";
         std::getline(std::cin >> std::ws, equation);
-        parse(equation, 1, 1);
+        parse(equation, 0, 0);
     }
 }
 
@@ -58,7 +54,6 @@ int main(int argc, char* argv[]) {
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        bool intera = false;
         if (arg == "-d") {
             dumpLexer = true;
         } else if (arg == "-h") {
@@ -68,19 +63,18 @@ int main(int argc, char* argv[]) {
         } else if (arg == "-i") {
             intera = true;
         }
-
-        if (intera) {
-            interactive();
-        } else {
-            filename = argv[argc - 1];
-            if (filename.empty()) {
-                std::cerr << "Error: No input file specified\n";
-                return 1;
-            }
-
-            equation = ReadFile(filename);
-            parse(equation, dumpLexer, verbose);
-        }
     }
 
+    if (intera) {
+        interactive();
+    } else {
+        filename = "examples/ex2.bruh";  // argv[argc - 1];
+        if (filename.empty()) {
+            std::cerr << "Error: No input file specified\n";
+            return 1;
+        }
+
+        equation = ReadFile(filename);
+        parse(equation, dumpLexer, verbose);
+    }
 }

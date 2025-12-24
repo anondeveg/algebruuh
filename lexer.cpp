@@ -25,7 +25,7 @@ void Lexer::advance() {
     }
 
     this->pos++;
-		this->column++;
+    this->column++;
     if (static_cast<unsigned int>(this->pos) >= this->source_code.size()) {
         this->currentChar = std::nullopt;  // reached end of file;
     } else {
@@ -49,12 +49,13 @@ void Lexer::skipWhitSpace() {
 }
 
 void Lexer::skipComments() {
-    if (this->currentChar.value() == '#') {
+    if (this->currentChar.has_value() && this->currentChar.value() == '#') {
         while (this->currentChar.has_value() && this->currentChar.value() != '\n') {
             this->advance();
         }
-
-        this->advance();  // skip the last \n;
+        if (this->currentChar.has_value()) {
+            this->advance();
+        }
     }
 }
 
@@ -81,17 +82,23 @@ Token Lexer::readNumber() {
     return Token {NUM, std::stod(numberBuffer), startLine, startColumn};
 }
 
-Token Lexer::readIdentifier() {
+Token Lexer::readAlphanumeric() {
     int startLine = this->line;
     int startColumn = this->column;
-    std::string identifierBuffer;
+    std::string alphanumericBuffer;
     // read alphanumeric and _
     while (this->currentChar.has_value() &&
-           (std::isalnum(this->currentChar.value()) || this->currentChar.value() == '_')) {
-        identifierBuffer += this->currentChar.value();
+           ((std::isalnum(this->currentChar.value()) || this->currentChar.value() == '_')) &&
+           currentChar.value() != '(') {
+        alphanumericBuffer += this->currentChar.value();
         this->advance();
     }
-    return Token {IDENTIFIER, identifierBuffer, startLine, startColumn};
+    if (currentChar.has_value() && currentChar.value() == '(') {
+        return Token {FUNCTION, alphanumericBuffer, startLine, startColumn};
+
+    } else {
+        return Token {IDENTIFIER, alphanumericBuffer, startLine, startColumn};
+    }
 }
 
 Token Lexer::genNextToken() {
@@ -110,11 +117,17 @@ Token Lexer::genNextToken() {
     int startLine = this->line;
     int startColumn = this->column;
 
-    if (std::isdigit(this->currentChar.value())) {
+    if (this->currentChar.has_value() && this->currentChar.value() == ';') {
+        advance();
+        return Token {SEMICOLON, ";", startLine, startColumn};
+    }
+    if (this->currentChar.has_value() && std::isdigit(this->currentChar.value())) {
         return this->readNumber();
     }
-    if (std::isalnum(this->currentChar.value()) || this->currentChar.value() == '_') {
-        return this->readIdentifier();
+    if (this->currentChar.has_value() &&
+
+        (std::isalnum(this->currentChar.value()) || this->currentChar.value() == '_')) {
+        return this->readAlphanumeric();
     }
 
     std::unordered_map<char, TokenTypes> singleCharachterTokens = {
@@ -128,16 +141,19 @@ Token Lexer::genNextToken() {
         {'^', POWOP},
         {'=', ASSIGN},
     };
-    if (singleCharachterTokens.contains(this->currentChar.value())) {
+    if (this->currentChar.has_value() &&
+        singleCharachterTokens.contains(this->currentChar.value())) {
         char ch = this->currentChar.value();
         TokenTypes ttype = singleCharachterTokens[ch];
         this->advance();
         return Token(ttype, std::string {ch}, startLine, startColumn);
     }
-
-    char unknownChar = this->currentChar.value();
-    this->advance();
-    return Token(UNKNOWN, std::string {unknownChar}, startLine, startColumn);
+    if (this->currentChar.has_value()) {
+        char unknownChar = this->currentChar.value();
+        this->advance();
+        return Token(UNKNOWN, std::string {unknownChar}, startLine, startColumn);
+    }
+    return Token {ENDOFFILE, "", 0, 0};
 }
 
 std::vector<Token> Lexer::tokenize() {
@@ -146,7 +162,7 @@ std::vector<Token> Lexer::tokenize() {
         Token token = this->genNextToken();
         tokens.emplace_back(token);
     }
-
-		tokens.emplace_back(Token{ENDOFFILE,"",this->line,this->column});
+    if (tokens.back().type != ENDOFFILE)
+        tokens.emplace_back(Token {ENDOFFILE, "", this->line, this->column});
     return tokens;
 }
