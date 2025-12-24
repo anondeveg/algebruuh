@@ -1,9 +1,13 @@
 #include "parser.hpp"
 
+#include "builtins.hpp"
 #include "helpers.hpp"
 #include "lexer.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -63,14 +67,14 @@ void tokenStream::advance() {
     this->position++;
 }
 
-bool tokenStream::expect(TokenTypes expected,const Token& t) {
+bool tokenStream::expect(TokenTypes expected, const Token& t) {
     bool isExpected = (current().type == expected);
     if (!isExpected)
-			if(expected == CLOSEDPAR){
-				throw std::runtime_error(std::string{"forgot ) "} + " try adding ) at " + std::to_string(t.line) + ":" + std::to_string(t.col)  );
-				
-			}
-   return isExpected;
+        if (expected == CLOSEDPAR) {
+            throw std::runtime_error(std::string {"forgot ) "} + " try adding ) at " +
+                                     std::to_string(t.line) + ":" + std::to_string(t.col));
+        }
+    return isExpected;
 }
 
 int getPrefixBidingPower(TokenTypes tokenType) {
@@ -144,14 +148,58 @@ double Parser::evaluate(Expr AST) {
     } else if (std::holds_alternative<numberNode>(AST)) {
         return std::get<numberNode>(AST).value;
     } else if (std::holds_alternative<identifierNode>(AST)) {
-        identifierNode n = std::get<identifierNode>(AST);			
-				if(n.name == "SIN"){
-					double val = evaluate(n.args[0]);
-					return std::sin((val  * M_PI / 180.0));
-				}
-		
+        identifierNode n = std::get<identifierNode>(AST);
+        std::string funcName = n.name;
+        std::transform(funcName.begin(), funcName.end(), funcName.begin(), ::toupper);
+
+        if (funcName == "SIN") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::sin((val * M_PI / 180.0));
+            }
+        } else if (funcName == "PI") {
+            return M_PI;
+
+        } else if (funcName == "INF") {
+            return INFINITY;
+        } else if (funcName == "ABS") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::abs(val);
+            }
+        } else if (funcName == "FLOOR") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::floor(val);
+            }
+        } else if (funcName == "CEIL") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::ceil(val);
+            }
+        } else if (funcName == "ROUND") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::round(val);
+            }
+        } else if (funcName == "TRUNC") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return std::trunc(val);
+            }
+        } else if (funcName == "FACTORIAL") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return FACTORIAL(val);
+            }
+        } else if (funcName == "RAND") {
+            if (n.args.size() > 0) {
+                double val = evaluate(n.args[0]);
+                return RAND(val);
+            }
+            throw std::runtime_error("NOT IMPLEMENTED IFS");
+        }
     }
-    throw std::runtime_error("NOT IMPLEMENTED IFS");
 }
 
 Expr Parser::parseExpression(tokenStream& ts, int minBindingPower) {
@@ -224,7 +272,8 @@ Expr Parser::parsePrefixExpression(const Token& token, tokenStream& ts) {
         // recursively parse its insides with binding power of 0
         // binding power of 0 means accept anything
         Expr expr = parseExpression(ts, 0);
-        ts.expect(CLOSEDPAR,token);  // we MUST have ) after parsing what's inside ()
+        ts.expect(CLOSEDPAR,
+                  token);  // we MUST have ) after parsing what's inside ()
         ts.advance();  // move past the CLOSEDPAR
         return expr;
     }
