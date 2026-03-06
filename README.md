@@ -1,14 +1,12 @@
 # algebruuh
+A lightweight interpreter for evaluating mathematical expressions and equations.
 
-A lightweight interpreter for mathematical equations.
+It includes a custom lexer, Pratt parser, and AST evaluator written in CPP.
+The goal of the project is to experiment with language design and interpreter construction.
 
 ## Status
 
-🚧 **Early Development** - Currently implements lexical analysis ONLY. AST generation and evaluation are in progress.
-
-## Note
-The lexer and parser are things I’m building mostly by intuition right now. Both will be rewritten later in a more standard, industry-style way.
-The whole purpose of the project is to have fun and learn.
+🚧 **Early Development**
 
 ## Prerequisites
 
@@ -20,7 +18,7 @@ The whole purpose of the project is to have fun and learn.
 ```bash
 git clone https://github.com/anondeveg/algebruuh
 cd algebruuh
-make build | debug 
+make
 ```
 
 ## Usage
@@ -41,9 +39,14 @@ algebruuh [OPTIONS] <PATH_TO_FILE>
 
 Create a file with your equation:
 
-```
+```py
 # example.bruh
-x + 2 - 120 + y^4 
+print(5);
+PRINT(RAND(5)); #from 0 to 5
+PRINT(SIN(90)); # 1
+PRINT(2+2*4); #10
+PRINT(RAND(SIN(45)) * 10);
+PRINT(FACTORIAL(RAND(50)));
 ```
 
 Run the interpreter:
@@ -61,10 +64,13 @@ algebruuh -d example.bruh
 
 ## Roadmap
 
-- [ ] Support multiple equations separated by newlines
-- [x] Implement AST (Abstract Syntax Tree) generation (DONE USING PRATT PARSING)
-- [ ] Add tree evaluation and equation solving
-- [ ] Support for common mathematical functions (sin cos etc)
+- [x] lexer 
+- [x] pratt parsing 
+- [x] Support multiple equations separated by newlines
+- [x] rand random number generation
+- [x] factorial
+- [ ] sin cos tan etc (currently only supports sin)
+- [ ] add equation solver (gauss elemenation)
 
 ## Contributing
 
