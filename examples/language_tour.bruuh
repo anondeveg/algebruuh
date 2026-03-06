@@ -1,0 +1,7 @@
+print(5);
+PRINT(RAND(5)); #from 0 to 5
+PRINT(SIN(90)); # 1
+PRINT(2+2*4); #10
+PRINT(RAND(SIN(45)) * 10);
+PRINT(FACTORIAL(RAND(50)));
+

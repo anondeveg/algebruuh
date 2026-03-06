@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
     if (intera) {
         interactive();
     } else {
-        filename = "examples/ex2.bruh";  // argv[argc - 1];
+        filename = argv[argc - 1];
         if (filename.empty()) {
             std::cerr << "Error: No input file specified\n";
             return 1;
