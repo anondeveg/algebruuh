@@ -19,12 +19,12 @@ std::string ReadFile(const std::filesystem::path& path) {
     return buffer.str();
 }
 
-void parse(std::string eq, bool dump, bool isVerbose) {
+double parse(std::string eq, bool dump, bool isVerbose) {
     Lexer lexer = Lexer(eq);
     std::vector<Token> tokens = lexer.tokenize();
     if (isVerbose)
         printContainer(tokens);
-    (Parser::parse(tokens));
+    return (Parser::parse(tokens));
 }
 
 void interactive() {
@@ -32,7 +32,7 @@ void interactive() {
         std::string equation;
         std::cout << "\n>>>";
         std::getline(std::cin >> std::ws, equation);
-        parse(equation, 0, 0);
+        std::cout << parse(equation, 0, 0);
     }
 }
 
